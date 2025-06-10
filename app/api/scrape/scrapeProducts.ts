@@ -5,11 +5,13 @@ import { logger } from "../lib/logger";
 interface ScrapeAllProductsInput {
   pageUrl: string;
   productCardSelector: string;
+  productNameSelector: string;
   productRatingSelector: string;
   totalRatingsSelector: string;
 }
 
 interface ScrapedProductCardDetails {
+  title?: string;
   productRating: string | null;
   totalRatings: string | null;
 }
@@ -30,7 +32,9 @@ const setupPage = async (browser: Browser): Promise<Page> => {
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.107 Safari/537.36",
   ];
-  await page.setUserAgent(userAgents[Math.floor(Math.random() * userAgents.length)]);
+  await page.setUserAgent(
+    userAgents[Math.floor(Math.random() * userAgents.length)]
+  );
   await page.setViewport({ width: 1366, height: 800 });
   return page;
 };
@@ -50,24 +54,73 @@ const navigateToUrl = async (page: Page, url: string) => {
 const scrapeProductCards = async (
   page: Page,
   productCardSelector: string,
+  productNameSelector: string,
   productRatingSelector: string,
   totalRatingsSelector: string
 ): Promise<ScrapedProductCardDetails[]> => {
   logger.debug(`Waiting for selector: ${productCardSelector}`);
-  await page.waitForSelector(productCardSelector, { visible: true, timeout: 15000 });
-  logger.debug(`Selector ${productCardSelector} is visible. Starting evaluation.`);
-  
+  await page.waitForSelector(productCardSelector, {
+    visible: true,
+    timeout: 15000,
+  });
+  logger.debug(
+    `Selector ${productCardSelector} is visible. Starting evaluation.`
+  );
   const productCards = await page.$$eval(
     productCardSelector,
-    (cards, ratingSelector, totalRatSelector) => {
+    (cards, nameSelector, ratingSelector, totalRatSelector) => {
       return cards.map((card) => {
+        const nameElement = card.querySelector(nameSelector);
         const ratingElement = card.querySelector(ratingSelector);
         const totalRatingsElement = card.querySelector(totalRatSelector);
-        const productRating = ratingElement ? ratingElement.textContent?.trim() || null : null;
-        const totalRatings = totalRatingsElement ? totalRatingsElement.textContent?.trim() || null : null;
-        return { productRating, totalRatings };
+
+        // Styled browser logs for debugging
+        console.log(
+          "%c[Scraper]%c Card found",
+          "background: #222; color: #bada55; font-weight: bold; padding: 2px 4px; border-radius: 2px;",
+          "color: #fff; background: #444; padding: 2px 4px; border-radius: 2px;"
+        );
+        if (nameElement) {
+          console.log(
+            "%c[Scraper]%c Product Name: %c%s",
+            "background: #222; color: #bada55; font-weight: bold; padding: 2px 4px; border-radius: 2px;",
+            "color: #fff; background: #444; padding: 2px 4px; border-radius: 2px;",
+            "color: #4caf50; font-weight: bold;",
+            nameElement.textContent?.trim() || ""
+          );
+        }
+        if (ratingElement) {
+          console.log(
+            "%c[Scraper]%c Rating: %c%s",
+            "background: #222; color: #bada55; font-weight: bold; padding: 2px 4px; border-radius: 2px;",
+            "color: #fff; background: #444; padding: 2px 4px; border-radius: 2px;",
+            "color: #2196f3; font-weight: bold;",
+            ratingElement.textContent?.trim() || ""
+          );
+        }
+        if (totalRatingsElement) {
+          console.log(
+            "%c[Scraper]%c Total Ratings: %c%s",
+            "background: #222; color: #bada55; font-weight: bold; padding: 2px 4px; border-radius: 2px;",
+            "color: #fff; background: #444; padding: 2px 4px; border-radius: 2px;",
+            "color: #ff9800; font-weight: bold;",
+            totalRatingsElement.textContent?.trim() || ""
+          );
+        }
+
+        const title = nameElement
+          ? nameElement.textContent?.trim() || undefined
+          : undefined;
+        const productRating = ratingElement
+          ? ratingElement.textContent?.trim() || null
+          : null;
+        const totalRatings = totalRatingsElement
+          ? totalRatingsElement.textContent?.trim() || null
+          : null;
+        return { title, productRating, totalRatings };
       });
     },
+    productNameSelector,
     productRatingSelector,
     totalRatingsSelector
   );
@@ -80,6 +133,7 @@ const scrapeProductCards = async (
 export const scrapeAllProducts = async ({
   pageUrl,
   productCardSelector,
+  productNameSelector,
   productRatingSelector,
   totalRatingsSelector,
 }: ScrapeAllProductsInput): Promise<ScrapedProductCardDetails[]> => {
@@ -90,10 +144,10 @@ export const scrapeAllProducts = async ({
     const page = await setupPage(browser);
 
     await navigateToUrl(page, pageUrl);
-
     const productsData = await scrapeProductCards(
       page,
       productCardSelector,
+      productNameSelector,
       productRatingSelector,
       totalRatingsSelector
     );

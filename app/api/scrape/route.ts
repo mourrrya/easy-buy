@@ -5,9 +5,10 @@ import { scrapeAllProducts } from "./scrapeProducts";
 
 const requestSchema = z.object({
   productPageUrl: z.string().url(),
+  productCardSelector: z.string(),
+  productNameSelector: z.string(),
   productRatingSelector: z.string(),
   totalRatingsSelector: z.string(),
-  productCardSelector: z.string(),
 });
 
 export async function POST(request: Request) {
@@ -18,17 +19,18 @@ export async function POST(request: Request) {
     if (!validation.success) {
       throw new ErrorValidation("Invalid request data");
     }
-
     const {
       productPageUrl,
+      productCardSelector,
+      productNameSelector,
       productRatingSelector,
       totalRatingsSelector,
-      productCardSelector,
     } = body;
 
     const scrapedData = await scrapeAllProducts({
       pageUrl: productPageUrl,
       productCardSelector,
+      productNameSelector,
       productRatingSelector,
       totalRatingsSelector,
     });

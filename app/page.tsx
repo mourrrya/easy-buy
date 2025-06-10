@@ -6,13 +6,14 @@ import { SubmitHandler, useForm } from "react-hook-form";
 interface ScrapeFormInputs {
   productPageUrl: string;
   productCardSelector: string;
+  productNameSelector: string;
   productRatingSelector: string;
   totalRatingsSelector: string;
 }
 
 interface ScrapedProduct {
   title?: string;
-  rating: string | null;
+  productRating: string | null;
   totalRatings: string | null;
   error?: string;
 }
@@ -59,7 +60,9 @@ export default function Home() {
       } else {
         if (result.message && result.data && result.data.length === 0) {
           setScrapedData([]);
-          setApiError(result.message || "No products found matching the criteria.");
+          setApiError(
+            result.message || "No products found matching the criteria."
+          );
         } else if (Array.isArray(result) && result.length === 0) {
           setScrapedData([]);
           setApiError("No products found matching the criteria.");
@@ -96,10 +99,6 @@ export default function Home() {
             type="url"
             {...register("productPageUrl", {
               required: "Product Page URL is required",
-              // pattern: {
-              //   value: /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/,
-              //   message: "Invalid URL format",
-              // },
             })}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
           />
@@ -123,10 +122,31 @@ export default function Home() {
               required: "Product Card Selector is required",
             })}
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          />
+          />{" "}
           {errors.productCardSelector && (
             <p className="mt-1 text-sm text-red-600">
               {errors.productCardSelector.message}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="productNameSelector"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Product Name CSS Selector (within card)
+          </label>
+          <input
+            id="productNameSelector"
+            {...register("productNameSelector", {
+              required: "Product Name Selector is required",
+            })}
+            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          />
+          {errors.productNameSelector && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.productNameSelector.message}
             </p>
           )}
         </div>
@@ -244,7 +264,7 @@ export default function Home() {
                         </td>
                       )}
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.rating || "N/A"}
+                        {product.productRating || "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {product.totalRatings || "N/A"}
@@ -260,7 +280,12 @@ export default function Home() {
               </table>
             </div>
           ) : (
-            !apiError && <p>No data to display. The API might have returned an empty set or an unexpected response.</p>
+            !apiError && (
+              <p>
+                No data to display. The API might have returned an empty set or
+                an unexpected response.
+              </p>
+            )
           )}
         </div>
       )}
